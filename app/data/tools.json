@@ -16,7 +16,7 @@
           "kind": "textarea",
           "required": true,
           "help": "1000文字目安",
-          "placeholder": "",
+          "placeholder": "リライトしたい文章をここに入力してください。例：「弊社では新しいサービスを開始いたします。このサービスは...」",
           "col": 12,
           "maxLength": 8000
         },
@@ -50,7 +50,7 @@
           "kind": "textarea",
           "required": true,
           "help": "長すぎると要約されます",
-          "placeholder": "",
+          "placeholder": "5つの要点にまとめたい文章や記事をここに入力してください。例：「今日は新商品の発表会に参加しました。そこで学んだことは...」",
           "col": 12,
           "maxLength": 8000
         }

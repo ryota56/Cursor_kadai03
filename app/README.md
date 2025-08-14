@@ -1,20 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI ツールプラットフォーム
+
+文章リライトツールとTikTok台本メーカーを提供するNext.jsアプリケーション
+
+## 🚨 重要: コマンド実行時の注意事項
+
+**必ずこのディレクトリ（appフォルダ）でコマンドを実行してください**
+
+### ✅ 正しいディレクトリ構造
+```
+Cursor_kadai03/
+├── .git/
+├── 仕様書.md
+└── app/                    ← ここがプロジェクトルート
+    ├── package.json        ← このファイルがある場所
+    ├── src/
+    ├── public/
+    └── ...
+```
+
+### 📍 正しいコマンド実行手順
+
+**PowerShell/コマンドプロンプトを開いて:**
+
+```powershell
+# 1. 正しいディレクトリに移動（絶対パス）
+cd C:\Users\banana34\code\Cursor_kadai03\app
+
+# 2. 現在のディレクトリを確認
+pwd
+# 出力: C:\Users\banana34\code\Cursor_kadai03\app
+
+# 3. package.jsonの存在確認
+ls package.json
+# 出力: package.json が表示されるはず
+
+# 4. 開発サーバー起動
+npm run dev
+```
+
+### ❌ よくある間違い
+
+```powershell
+# 間違い: 親ディレクトリで実行
+cd C:\Users\banana34\code\Cursor_kadai03
+npm run dev  # ← エラー: package.json が見つからない
+```
 
 ## Getting Started
 
-First, run the development server:
+**開発サーバーの起動:**
 
 ```bash
+# 必ず C:\Users\banana34\code\Cursor_kadai03\app で実行
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**アクセスURL:**
+- メイン: [http://localhost:3000](http://localhost:3000)
+- ポート競合時: [http://localhost:3001](http://localhost:3001)
+
+## 🎯 利用可能なツール
+
+- `/tools/rewrite` - 文章リライトツール
+- `/tools/tiktok-5picks` - TikTok台本メーカー
+
+## 🔧 トラブルシューティング
+
+### Internal Server Error が発生する場合
+
+```powershell
+# 1. 開発サーバー停止（Ctrl+C）
+# 2. キャッシュクリア
+Remove-Item -Path ".\.next" -Recurse -Force
+# 3. 再起動
+npm run dev
+```
+
+### Hydration Mismatch エラーが発生する場合
+
+```powershell
+# ハードリフレッシュを実行
+# Chrome/Edge: Ctrl + Shift + R
+# Firefox: Ctrl + F5
+```
+
+### ポート 3000 が使用中の場合
+
+- サーバー起動時に自動的に 3001 ポートに変更されます
+- 表示されたURLを確認してアクセスしてください
+
+### コマンドが見つからないエラー
+
+```powershell
+# Node.jsとnpmのインストール確認
+node --version
+npm --version
+
+# 依存関係の再インストール
+npm install
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

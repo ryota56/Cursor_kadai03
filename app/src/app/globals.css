@@ -119,4 +119,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* TextArea強制スタイル - 横幅拡張問題の解決 */
+  textarea[data-slot="textarea"] {
+    min-height: 140px !important;
+    max-height: 480px !important;
+    width: 100% !important;
+    resize: vertical !important;
+    box-sizing: border-box !important;
+    line-height: 1.5 !important;
+  }
 }
