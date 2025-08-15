@@ -10,12 +10,21 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const order = searchParams.get('order') || 'popular';
     const query = searchParams.get('q');
+    const favorites = searchParams.get('favorites'); // 新規: お気に入りフィルタ
 
     // データファイル読み込み
     const dataPath = path.join(process.cwd(), 'data', 'tools.json');
     const fileContents = await fs.readFile(dataPath, 'utf8');
     const data = JSON.parse(fileContents);
     let tools: Tool[] = data.tools.filter((tool: Tool) => tool.status === 'public');
+
+    // お気に入りフィルタ
+    if (favorites && favorites.trim()) {
+      const favoriteSlugs = favorites.split(',').map(slug => slug.trim()).filter(Boolean);
+      if (favoriteSlugs.length > 0) {
+        tools = tools.filter(tool => favoriteSlugs.includes(tool.slug));
+      }
+    }
 
     // 検索フィルタ
     if (query && query.trim()) {

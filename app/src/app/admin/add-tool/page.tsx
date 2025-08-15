@@ -1,0 +1,331 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
+import { toast } from 'sonner';
+
+export default function AddToolPage() {
+  const [toolData, setToolData] = useState({
+    name: '',
+    description: '',
+    slug: '',
+    prompt_template: '',
+    input_label: '',
+    input_placeholder: '',
+    input_help: ''
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (field: string, value: string) => {
+    setToolData(prev => ({ ...prev, [field]: value }));
+    
+    // ツール名が変更された時、自動でslugを生成
+    if (field === 'name') {
+      const slug = value
+        .toLowerCase()
+        .replace(/[^a-z0-9あ-ん\s-]/g, '')
+        .replace(/[\s　]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      setToolData(prev => ({ ...prev, slug }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // バリデーション
+      if (!toolData.name.trim()) {
+        toast.error('ツール名を入力してください');
+        return;
+      }
+      if (!toolData.description.trim()) {
+        toast.error('説明を入力してください');
+        return;
+      }
+      if (!toolData.prompt_template.trim()) {
+        toast.error('プロンプトを入力してください');
+        return;
+      }
+
+      // 新ツールデータの構築
+      const newTool = {
+        id: Date.now(),
+        slug: toolData.slug || toolData.name.toLowerCase().replace(/\s+/g, '-'),
+        name: toolData.name.trim(),
+        description: toolData.description.trim(),
+        type: "text" as const,
+        image_url: "/images/placeholder.svg",
+        usage_count: 0,
+        status: "public" as const,
+        form_schema_json: [
+          {
+            name: "content",
+            label: toolData.input_label.trim() || "入力内容",
+            kind: "textarea" as const,
+            required: true,
+            help: toolData.input_help.trim() || "",
+            placeholder: toolData.input_placeholder.trim() || "",
+            col: 12,
+            maxLength: 8000
+          }
+        ],
+        prompt_template: toolData.prompt_template.trim(),
+        created_at: new Date().toISOString()
+      };
+
+      // APIエンドポイントに送信
+      const response = await fetch('/api/admin/tools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTool),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'ツールの追加に失敗しました');
+      }
+
+      const result = await response.json();
+      toast.success('新しいツールが追加されました！');
+      console.log('Added tool:', result.tool);
+      
+      // フォームをリセット
+      setToolData({
+        name: '',
+        description: '',
+        slug: '',
+        prompt_template: '',
+        input_label: '',
+        input_placeholder: '',
+        input_help: ''
+      });
+
+    } catch (error) {
+      console.error('Tool creation error:', error);
+      toast.error(error instanceof Error ? error.message : 'エラーが発生しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ナビゲーション */}
+        <div className="mb-6">
+          <Breadcrumbs 
+            items={[
+              { label: 'ツール一覧', href: '/' },
+              { label: 'ツール追加' }
+            ]}
+          />
+        </div>
+
+        {/* ヘッダー */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">新しいツールを追加</h1>
+              <p className="text-gray-600">AIツールを追加してプラットフォームを拡張します</p>
+            </div>
+            
+
+          </div>
+        </div>
+
+        {/* メインコンテンツ */}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* 基本情報 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                基本情報
+              </CardTitle>
+              <CardDescription>
+                新しいAIツールの基本情報を入力してください
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="name" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  ツール名 <span className="text-red-500">*</span>
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="name"
+                    value={toolData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="例：メール文章作成"
+                    className="w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="description" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  説明 <span className="text-red-500">*</span>
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="description"
+                    value={toolData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="例：ビジネスメールを自動生成します"
+                    className="w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="slug" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  URL用ID
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="slug"
+                    value={toolData.slug}
+                    onChange={(e) => handleInputChange('slug', e.target.value)}
+                    placeholder="自動生成されます"
+                    className="w-full bg-gray-50"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">URL: /tools/{toolData.slug}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* プロンプト設定 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>プロンプト設定</CardTitle>
+              <CardDescription>
+                AIに指示するプロンプトを設定してください
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="prompt" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  プロンプト <span className="text-red-500">*</span>
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Textarea
+                    id="prompt"
+                    value={toolData.prompt_template}
+                    onChange={(e) => handleInputChange('prompt_template', e.target.value)}
+                    placeholder={`あなたは○○の専門家です。以下の内容をもとに○○を作成してください。
+
+内容: %s_content%
+
+制約条件:
+- 〇〇
+- 〇〇`}
+                    className="w-full resize-y min-h-[140px] max-h-[480px]"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    %s_content% で入力内容を参照できます
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 入力フォーム設定 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>入力フォーム設定</CardTitle>
+              <CardDescription>
+                ユーザーが入力するフォームの設定
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="input_label" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  入力欄ラベル
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="input_label"
+                    value={toolData.input_label}
+                    onChange={(e) => handleInputChange('input_label', e.target.value)}
+                    placeholder="例：メール内容"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="input_placeholder" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  プレースホルダー
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="input_placeholder"
+                    value={toolData.input_placeholder}
+                    onChange={(e) => handleInputChange('input_placeholder', e.target.value)}
+                    placeholder="例：送信したいメールの要点を入力してください"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[12rem_1fr] gap-3 items-start w-full">
+                <Label htmlFor="input_help" className="pt-2 whitespace-nowrap break-keep text-sm font-medium text-gray-700">
+                  ヘルプテキスト
+                </Label>
+                <div className="min-w-0 w-full">
+                  <Input
+                    id="input_help"
+                    value={toolData.input_help}
+                    onChange={(e) => handleInputChange('input_help', e.target.value)}
+                    placeholder="例：500文字程度で入力してください"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 保存ボタン */}
+          <div className="flex justify-end pt-6">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="min-w-[120px] h-10 px-6"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  ツールを追加
+                </>
+              )}
+            </Button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  );
+}

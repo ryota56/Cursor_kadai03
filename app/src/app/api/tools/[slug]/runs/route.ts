@@ -69,22 +69,41 @@ function generateMockResponse(tool: Tool, inputs: Record<string, unknown>): Reco
 }
 
 // Gemini API呼び出し（実装簡略化）
-async function callGemini(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function callGemini(
+  prompt: string,
+  model: string = 'gemini-2.5-flash',
+  userApiKey?: string
+): Promise<string> {
+  // 優先順位: userApiKey > 環境変数（既存ロジックを保持）
+  const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+  
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured');
+    throw new Error('APIキーが設定されていません。Google AI Studioでキーを取得してください。');
   }
 
   try {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
-    const result = await model.generateContent(prompt);
+    // 動的モデル設定（既存の固定モデルを拡張）
+    const geminiModel = genAI.getGenerativeModel({ model });
+    
+    const result = await geminiModel.generateContent(prompt);
     const response = await result.response;
     return response.text();
   } catch (error) {
     console.error('Gemini API error:', error);
+    
+    // APIキーエラーの詳細化（既存エラーハンドリングを拡張）
+    if (error instanceof Error) {
+      if (error.message.includes('API_KEY_INVALID')) {
+        throw new Error('APIキーが無効です。正しいGemini APIキーを入力してください。');
+      }
+      if (error.message.includes('QUOTA_EXCEEDED')) {
+        throw new Error('APIの利用制限に達しました。しばらく時間をおいてお試しください。');
+      }
+    }
+    
     throw error;
   }
 }
@@ -97,7 +116,21 @@ export async function POST(
   try {
     const { slug } = await params;
     const body: PostRunRequest = await request.json();
-    const { inputs, mode = 'mock' } = body;
+    const { inputs, mode = 'mock', model = 'gemini-2.5-flash', userApiKey } = body;
+    
+    // セキュリティ: userApiKeyの基本バリデーション（緩和版）
+    if (userApiKey) {
+      // 基本的な長さと文字種のチェックのみ
+      if (userApiKey.length < 30 || userApiKey.length > 50 || !/^[A-Za-z0-9_-]+$/.test(userApiKey)) {
+        const errorResponse: { error: ApiError } = {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'APIキーの形式が正しくありません'
+          }
+        };
+        return NextResponse.json(errorResponse, { status: 400 });
+      }
+    }
 
     // ツール情報取得
     const dataPath = path.join(process.cwd(), 'data', 'tools.json');
@@ -143,21 +176,21 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    // 生成実行
+    // AI生成実行（既存ロジックを拡張）
     let output: Record<string, unknown>;
     let usedFallback = false;
 
     try {
-      if (mode === 'gemini' && process.env.GEMINI_API_KEY) {
+      if (mode === 'gemini' && (userApiKey || process.env.GEMINI_API_KEY)) {
         const prompt = buildPrompt(tool.prompt_template, inputs);
-        const result = await callGemini(prompt);
+        const result = await callGemini(prompt, model, userApiKey);
         output = { text: result };
       } else {
         output = generateMockResponse(tool, inputs);
       }
     } catch (error) {
       console.error('Generation error:', error);
-      // フォールバック
+      // フォールバック（既存）
       output = generateMockResponse(tool, inputs);
       usedFallback = true;
     }

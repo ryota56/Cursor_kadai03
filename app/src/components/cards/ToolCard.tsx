@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, Star, Users } from 'lucide-react';
+import { Heart, Star, Users, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -13,11 +13,13 @@ import type { Tool } from '@/types/tool';
 
 interface ToolCardProps {
   tool: Tool;
+  onDelete?: (tool: Tool) => void;
 }
 
-export function ToolCard({ tool }: ToolCardProps) {
+export function ToolCard({ tool, onDelete }: ToolCardProps) {
   const [favorited, setFavorited] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // クライアントマウント後にお気に入り状態を読み込み
   useEffect(() => {
@@ -37,6 +39,38 @@ export function ToolCard({ tool }: ToolCardProps) {
       addFavorite(tool.slug);
       setFavorited(true);
       toast.success('お気に入りに追加しました');
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!onDelete) return;
+    
+    // シンプルな確認ダイアログ
+    const confirmed = window.confirm(`ツール「${tool.name}」を削除しますか？\nこの操作は取り消すことができません。`);
+    if (!confirmed) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/tools/${tool.slug}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'ツールの削除に失敗しました');
+      }
+
+      toast.success(`ツール「${tool.name}」を削除しました`);
+      onDelete(tool);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'ツールの削除に失敗しました';
+      toast.error(errorMessage);
+      console.error('❌ Failed to delete tool:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -86,19 +120,36 @@ export function ToolCard({ tool }: ToolCardProps) {
               </CardTitle>
             </div>
             
-            {/* お気に入りボタン */}
+            {/* ボタン群 */}
             {mounted && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFavoriteToggle}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={favorited ? 'お気に入りから削除' : 'お気に入りに追加'}
-              >
-                <Heart 
-                  className={`w-4 h-4 ${favorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
-                />
-              </Button>
+              <div className="flex items-center gap-1">
+                {/* お気に入りボタン */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFavoriteToggle}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={favorited ? 'お気に入りから削除' : 'お気に入りに追加'}
+                >
+                  <Heart 
+                    className={`w-4 h-4 ${favorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
+                  />
+                </Button>
+                
+                {/* 削除ボタン */}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    aria-label="ツールを削除"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           

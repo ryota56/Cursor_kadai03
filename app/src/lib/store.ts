@@ -115,12 +115,22 @@ export const addFavorite = (toolSlug: string): void => {
 
   const updated = [...favorites, newFavorite];
   safeSetItem(STORAGE_KEYS.favorites, JSON.stringify(updated));
+  
+  // カスタムイベントを発火してリアルタイム更新
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('favoritesChanged'));
+  }
 };
 
 export const removeFavorite = (toolSlug: string): void => {
   const favorites = getFavorites();
   const updated = favorites.filter(fav => fav.toolSlug !== toolSlug);
   safeSetItem(STORAGE_KEYS.favorites, JSON.stringify(updated));
+  
+  // カスタムイベントを発火してリアルタイム更新
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('favoritesChanged'));
+  }
 };
 
 export const isFavorite = (toolSlug: string): boolean => {
