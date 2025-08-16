@@ -107,7 +107,7 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
 
   return (
     <Link href={`/tools/${tool.slug}`} className="block group">
-      <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] group-hover:border-indigo-200">
+      <Card className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-gray-50/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200/50 backdrop-blur-sm">
                  <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
             <div className="flex-1">

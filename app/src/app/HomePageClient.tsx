@@ -12,6 +12,7 @@ import { useClientMount } from '@/components/providers/ClientMountProvider';
 import { Heart } from 'lucide-react';
 import type { Tool } from '@/types/tool';
 import type { GetToolsResponse } from '@/types/api';
+import { Button } from '@/components/ui/button';
 
 interface HomePageClientProps {
   initialTools: Tool[];
@@ -199,6 +200,24 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ヒーローセクション */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            AIツールハブ
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
+            最新のAI技術を活用したツールを、簡単に試せるプラットフォーム
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+              ツールを探す
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* ヘッダー */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
