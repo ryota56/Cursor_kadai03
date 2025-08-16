@@ -35,6 +35,30 @@
       "created_at": "2024-01-15T10:00:00Z"
     },
     {
+      "id": 1755328470643,
+      "slug": "a",
+      "name": "a",
+      "description": "a",
+      "type": "text",
+      "image_url": "/images/uploads/2025-08-16T07-14-27_bad6a8e8-c71a-4ef0-bd41-14732ed57092.png",
+      "usage_count": 0,
+      "status": "public",
+      "form_schema_json": [
+        {
+          "name": "content",
+          "label": "入力内容",
+          "kind": "textarea",
+          "required": true,
+          "help": "",
+          "placeholder": "",
+          "col": 12,
+          "maxLength": 8000
+        }
+      ],
+      "prompt_template": "a",
+      "created_at": "2025-08-16T07:14:30.643Z"
+    },
+    {
       "id": 1755329674091,
       "slug": "関西弁ボット",
       "name": "関西弁ボット",

@@ -4,13 +4,20 @@ import path from 'path';
 import type { Tool } from '@/types/tool';
 import type { ApiError } from '@/types/api';
 
-// ツール削除API
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
     const { slug } = params;
+    
+    // デフォルトツールの削除を拒否
+    if (slug === 'rewrite') {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'デフォルトツールは削除できません' } },
+        { status: 403 }
+      );
+    }
     
     // slugのバリデーション
     if (!slug || typeof slug !== 'string' || slug.trim() === '') {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,16 +25,6 @@ export default function AddToolPage() {
 
   const [imageUrl, setImageUrl] = useState<string>('/images/placeholder.svg');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageUploaded, setImageUploaded] = useState(false);
-  
-  // 自動遷移機能の状態
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [redirectCountdown, setRedirectCountdown] = useState(0);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
-  const [redirectTimer, setRedirectTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  // 最新のimageUrl値を保持するためのref
-  const imageUrlRef = useRef<string>('/images/placeholder.svg');
 
   const handleInputChange = (field: string, value: string) => {
     setToolData(prev => ({ ...prev, [field]: value }));
@@ -51,45 +41,14 @@ export default function AddToolPage() {
     }
   };
 
-  const handleImageUploaded = useCallback((uploadedImageUrl: string) => {
-    console.log('📤 handleImageUploaded called with:', uploadedImageUrl);
-    console.log('🔄 Previous imageUrl state:', imageUrl);
-    
-    // 画像URLの検証
-    if (!uploadedImageUrl) {
-      console.error('❌ Empty image URL received');
-      toast.error('画像URLが無効です');
-      return;
-    }
-    
-    // プレースホルダー画像の場合は警告を表示
-    if (uploadedImageUrl === '/images/placeholder.svg') {
-      console.warn('⚠️ Placeholder image detected, this might indicate an upload issue');
-    }
-    
-    // refとstateの両方を更新
-    imageUrlRef.current = uploadedImageUrl;
+  const handleImageUploaded = (uploadedImageUrl: string) => {
     setImageUrl(uploadedImageUrl);
-    setImageUploaded(true);
-    console.log('✅ imageUrl state updated to:', uploadedImageUrl);
     toast.success('画像がアップロードされました');
-  }, []); // 依存関係を空配列に変更
+  };
 
-  const handleImageRemoved = useCallback(() => {
-    console.log('handleImageRemoved called');
-    imageUrlRef.current = '/images/placeholder.svg';
+  const handleImageRemoved = () => {
     setImageUrl('/images/placeholder.svg');
-    setImageUploaded(false);
-  }, []);
-
-  // クリーンアップ処理
-  useEffect(() => {
-    return () => {
-      if (redirectTimer) {
-        clearInterval(redirectTimer);
-      }
-    };
-  }, [redirectTimer]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,28 +69,6 @@ export default function AddToolPage() {
         return;
       }
 
-      // 画像URLの検証と処理（refの最新値も確認）
-      let finalImageUrl = imageUrl;
-      
-      // デバッグログを追加
-      console.log('🔍 Current imageUrl state in handleSubmit:', imageUrl);
-      console.log('🔍 Current imageUrlRef.current:', imageUrlRef.current);
-      console.log('🔍 Image uploaded flag:', imageUploaded);
-      
-      // refの最新値も考慮して最終的な画像URLを決定
-      if (!imageUrl || imageUrl === '/images/placeholder.svg') {
-        if (imageUrlRef.current && imageUrlRef.current !== '/images/placeholder.svg') {
-          console.log('🔄 Using ref value instead of state:', imageUrlRef.current);
-          finalImageUrl = imageUrlRef.current;
-        } else {
-          console.warn('⚠️ Using placeholder image for tool - no image uploaded');
-          finalImageUrl = '/images/placeholder.svg';
-        }
-      } else {
-        console.log('✅ Using uploaded image:', imageUrl);
-        finalImageUrl = imageUrl;
-      }
-      
       // 新ツールデータの構築
       const newTool = {
         id: Date.now(),
@@ -139,7 +76,7 @@ export default function AddToolPage() {
         name: toolData.name.trim(),
         description: toolData.description.trim(),
         type: "text" as const,
-        image_url: finalImageUrl,
+        image_url: imageUrl,
         usage_count: 0,
         status: "public" as const,
         form_schema_json: [
@@ -158,9 +95,6 @@ export default function AddToolPage() {
         created_at: new Date().toISOString()
       };
 
-      // デバッグログ追加
-      console.log('📋 Tool data image_url:', newTool.image_url);
-
       // APIエンドポイントに送信
       const response = await fetch('/api/admin/tools', {
         method: 'POST',
@@ -176,28 +110,10 @@ export default function AddToolPage() {
       }
 
       const result = await response.json();
+      toast.success('新しいツールが追加されました！');
+      console.log('Added tool:', result.tool);
       
-      // 成功状態を設定
-      setShowSuccessMessage(true);
-      setShouldRedirect(true);
-      
-      // カウントダウン開始
-      let countdown = 2;
-      setRedirectCountdown(countdown);
-      
-      const timer = setInterval(() => {
-        countdown--;
-        setRedirectCountdown(countdown);
-        
-        if (countdown <= 0) {
-          clearInterval(timer);
-          window.location.href = '/';
-        }
-      }, 1000);
-      
-      setRedirectTimer(timer);
-      
-      // フォームをリセット（既存処理を維持）
+      // フォームをリセット
       setToolData({
         name: '',
         description: '',
@@ -208,35 +124,10 @@ export default function AddToolPage() {
         input_help: ''
       });
       setImageUrl('/images/placeholder.svg');
-      setImageUploaded(false);
-      imageUrlRef.current = '/images/placeholder.svg';
 
     } catch (error) {
-      console.error('❌ Tool creation error:', error);
-      
-      // タイマーのクリーンアップ
-      if (redirectTimer) {
-        clearInterval(redirectTimer);
-        setRedirectTimer(null);
-      }
-      // 状態のリセット
-      setShowSuccessMessage(false);
-      setShouldRedirect(false);
-      setRedirectCountdown(0);
-      
-      // より詳細なエラーメッセージ
-      let errorMessage = 'エラーが発生しました';
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
-        } else if (error.message.includes('image')) {
-          errorMessage = '画像の処理中にエラーが発生しました。';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      toast.error(errorMessage);
+      console.error('Tool creation error:', error);
+      toast.error(error instanceof Error ? error.message : 'エラーが発生しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -339,13 +230,13 @@ export default function AddToolPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-                             <ImageUploader
-                 onImageUploaded={handleImageUploaded}
-                 onImageRemoved={handleImageRemoved}
-                 aspectRatio="16:9"
-                 maxSize={5 * 1024 * 1024} // 5MB
-                 accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif,image/avif,image/bmp,image/x-icon"
-               />
+              <ImageUploader
+                onImageUploaded={handleImageUploaded}
+                onImageRemoved={handleImageRemoved}
+                aspectRatio="16:9"
+                maxSize={5 * 1024 * 1024} // 5MB
+                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+              />
             </CardContent>
           </Card>
 
@@ -464,48 +355,6 @@ export default function AddToolPage() {
 
         </form>
       </div>
-
-      {/* 成功メッセージモーダル */}
-      {showSuccessMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <div className="text-center">
-              <div className="text-green-600 text-6xl mb-4">✓</div>
-              <h3 className="text-lg font-semibold mb-2">ツール追加完了！</h3>
-              <p className="text-gray-600 mb-4">
-                {redirectCountdown}秒後にツール一覧に移動します
-              </p>
-              <div className="flex justify-center space-x-2">
-                <Button
-                  onClick={() => {
-                    setShowSuccessMessage(false);
-                    setShouldRedirect(false);
-                    if (redirectTimer) {
-                      clearInterval(redirectTimer);
-                    }
-                    window.location.href = '/';
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  今すぐ移動
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowSuccessMessage(false);
-                    setShouldRedirect(false);
-                    if (redirectTimer) {
-                      clearInterval(redirectTimer);
-                    }
-                  }}
-                >
-                  キャンセル
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

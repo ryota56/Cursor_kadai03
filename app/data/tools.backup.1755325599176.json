@@ -33,30 +33,6 @@
       ],
       "prompt_template": "あなたはプロのライターです。\n次の文章を%s_tone%のトーンで、意味を保ちつつ表現を大きく変えてリライトしてください。\n# 制約:\n- 書き出しとゴール（結論）は同じ\n- 事実は改変しない\n# 文章:\n\"\"\"%s_body%\"\"\"",
       "created_at": "2024-01-15T10:00:00Z"
-    },
-    {
-      "id": 1755329674091,
-      "slug": "関西弁ボット",
-      "name": "関西弁ボット",
-      "description": "関西弁で話すBOT",
-      "type": "text",
-      "image_url": "/images/uploads/2025-08-16T07-33-59_bad6a8e8-c71a-4ef0-bd41-14732ed57092.png",
-      "usage_count": 0,
-      "status": "public",
-      "form_schema_json": [
-        {
-          "name": "content",
-          "label": "入力内容",
-          "kind": "textarea",
-          "required": true,
-          "help": "",
-          "placeholder": "",
-          "col": 12,
-          "maxLength": 8000
-        }
-      ],
-      "prompt_template": "必ず関西弁を使って回答してください。",
-      "created_at": "2025-08-16T07:34:34.091Z"
     }
   ]
 }

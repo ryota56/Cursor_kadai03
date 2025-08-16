@@ -12,6 +12,8 @@ interface ToolDetailPageProps {
 // Server Component - 静的データの取得
 export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
   const { slug } = await params;
+  // URLデコード処理
+  const decodedSlug = decodeURIComponent(slug);
   
   try {
     // サーバー側でdata/tools.jsonを読み込み
@@ -19,8 +21,13 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
     const fileContents = await fs.readFile(dataPath, 'utf8');
     const data = JSON.parse(fileContents);
     
+    // デバッグ用ログ
+    console.log('Requested slug:', slug);
+    console.log('Decoded slug:', decodedSlug);
+    console.log('Available slugs:', data.tools.map((t: Tool) => t.slug));
+    
     const tool: Tool | undefined = data.tools.find(
-      (t: Tool) => t.slug === slug && t.status === 'public'
+      (t: Tool) => t.slug === decodedSlug && t.status === 'public'
     );
 
     if (!tool) {

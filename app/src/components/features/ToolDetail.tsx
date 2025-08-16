@@ -74,15 +74,7 @@ export function ToolDetail({ tool }: ToolDetailProps) {
     toast.warning('AI生成に失敗したため、代替の生成方法を使用しました');
   };
 
-  // Format usage count
-  const formatUsageCount = (count: number): string => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M回使用`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K回使用`;
-    }
-    return `${count}回使用`;
-  };
+
 
   const getTypeColor = (type: string): string => {
     switch (type) {
@@ -111,17 +103,20 @@ export function ToolDetail({ tool }: ToolDetailProps) {
         <div className="space-y-6">
           <Card>
             <CardHeader className="text-center">
-              <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-40 h-40 bg-gray-100 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                 {tool.image_url ? (
                   <Image
                     src={tool.image_url}
                     alt={tool.name}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12"
+                    width={160}
+                    height={160}
+                    className="w-full h-full object-cover rounded-full"
+                    onError={() => {
+                      console.warn(`Failed to load image: ${tool.image_url}`);
+                    }}
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gray-300 rounded-full" />
+                  <div className="w-full h-full bg-gray-300 rounded-full" />
                 )}
               </div>
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -135,9 +130,7 @@ export function ToolDetail({ tool }: ToolDetailProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-sm text-gray-600">
-                {formatUsageCount(tool.usage_count)}
-              </p>
+
               
               <Button
                 variant="outline"

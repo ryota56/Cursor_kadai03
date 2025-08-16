@@ -1,7 +1,37 @@
 <svg width="480" height="320" viewBox="0 0 480 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="480" height="320" fill="#E5E7EB"/>
-  <circle cx="240" cy="140" r="40" fill="#9CA3AF"/>
-  <path d="M220 140L240 120L260 140L240 160L220 140Z" fill="#6B7280"/>
-  <rect x="180" y="200" width="120" height="8" rx="4" fill="#9CA3AF"/>
-  <rect x="200" y="220" width="80" height="6" rx="3" fill="#D1D5DB"/>
+  <!-- 背景 -->
+  <rect width="480" height="320" fill="#F8FAFC"/>
+  
+  <!-- メインコンテナ -->
+  <rect x="80" y="60" width="320" height="200" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+  
+  <!-- 元のテキスト（薄いグレー） -->
+  <rect x="100" y="80" width="280" height="8" rx="4" fill="#CBD5E1"/>
+  <rect x="100" y="100" width="240" height="8" rx="4" fill="#CBD5E1"/>
+  <rect x="100" y="120" width="260" height="8" rx="4" fill="#CBD5E1"/>
+  <rect x="100" y="140" width="200" height="8" rx="4" fill="#CBD5E1"/>
+  
+  <!-- 編集ペンアイコン -->
+  <g transform="translate(320, 100)">
+    <!-- ペンの本体 -->
+    <path d="M0 0L8 8L6 10L-2 2L0 0Z" fill="#3B82F6"/>
+    <!-- ペンの先端 -->
+    <path d="M-2 2L-4 4L-2 6L0 4L-2 2Z" fill="#1D4ED8"/>
+    <!-- ペンの持ち手 -->
+    <rect x="6" y="6" width="2" height="8" rx="1" fill="#64748B"/>
+  </g>
+  
+  <!-- 新しいテキスト（強調表示） -->
+  <rect x="100" y="180" width="280" height="8" rx="4" fill="#3B82F6"/>
+  <rect x="100" y="200" width="240" height="8" rx="4" fill="#3B82F6"/>
+  <rect x="100" y="220" width="260" height="8" rx="4" fill="#3B82F6"/>
+  
+  <!-- 矢印（編集を示す） -->
+  <path d="M240 160L240 180" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M235 175L240 180L245 175" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 装飾的な要素 -->
+  <circle cx="120" cy="100" r="2" fill="#94A3B8"/>
+  <circle cx="140" cy="120" r="2" fill="#94A3B8"/>
+  <circle cx="160" cy="140" r="2" fill="#94A3B8"/>
 </svg>

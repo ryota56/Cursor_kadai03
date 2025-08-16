@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | AIツールMVP",
-    default: "AIツールMVP",
+    template: "%s | AIツールハブ",
+    default: "AIツールハブ",
   },
   description: "文章・画像などのAIツールを素早く試せるMVP",
   openGraph: {
-    title: "AIツールMVP",
+    title: "AIツールハブ",
     description: "文章・画像などのAIツールを素早く試せるMVP",
     type: "website",
   },

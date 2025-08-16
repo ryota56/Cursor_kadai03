@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, Star, Users, Trash2 } from 'lucide-react';
+import { Heart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -27,6 +27,11 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
     setFavorited(isFavorite(tool.slug));
   }, [tool.slug]);
 
+  // デフォルトツールかどうかを判定
+  const isDefaultTool = (toolSlug: string): boolean => {
+    return toolSlug === 'rewrite';
+  };
+
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.preventDefault(); // Linkナビゲーションを防ぐ
     e.stopPropagation();
@@ -47,6 +52,12 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
     e.stopPropagation();
     
     if (!onDelete) return;
+    
+    // デフォルトツールの場合は削除を拒否
+    if (isDefaultTool(tool.slug)) {
+      toast.error('デフォルトツールは削除できません');
+      return;
+    }
     
     // シンプルな確認ダイアログ
     const confirmed = window.confirm(`ツール「${tool.name}」を削除しますか？\nこの操作は取り消すことができません。`);
@@ -74,16 +85,6 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
     }
   };
 
-  const formatUsageCount = (count: number): string => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    }
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
-  };
-
   const getTypeColor = (type: string): string => {
     switch (type) {
       case 'text': return 'bg-blue-100 text-blue-800';
@@ -107,13 +108,19 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
   return (
     <Link href={`/tools/${tool.slug}`} className="block group">
       <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] group-hover:border-indigo-200">
-        <CardHeader className="pb-4">
+                 <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary" className={getTypeColor(tool.type)}>
                   {getTypeLabel(tool.type)}
                 </Badge>
+                {/* デフォルトツールの場合は固定バッジを表示 */}
+                {isDefaultTool(tool.slug) && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    固定
+                  </Badge>
+                )}
               </div>
               <CardTitle className="text-lg font-semibold leading-tight group-hover:text-indigo-600 transition-colors">
                 {tool.name}
@@ -136,8 +143,8 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
                   />
                 </Button>
                 
-                {/* 削除ボタン */}
-                {onDelete && (
+                {/* 削除ボタン（デフォルトツール以外のみ表示） */}
+                {onDelete && !isDefaultTool(tool.slug) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -153,48 +160,39 @@ export function ToolCard({ tool, onDelete }: ToolCardProps) {
             )}
           </div>
           
-          {/* サムネイル画像 */}
-          <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
-            {tool.image_url ? (
-              <Image
-                src={tool.image_url}
-                alt={`${tool.name}のサムネイル`}
-                fill
-                className="object-cover transition-transform duration-200 group-hover:scale-105"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                <Image
-                  src="/images/placeholder.svg"
-                  alt="プレースホルダー"
-                  width={64}
-                  height={64}
-                  className="opacity-50"
-                />
-              </div>
-            )}
-          </div>
+                     {/* サムネイル画像 */}
+           <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
+             {tool.image_url ? (
+               <Image
+                 src={tool.image_url}
+                 alt={`${tool.name}のサムネイル`}
+                 fill
+                 className="object-cover transition-transform duration-200 group-hover:scale-105"
+                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                 priority={tool.slug === 'rewrite'} // LCP要素にpriorityを追加
+                 onError={() => {
+                   console.warn(`Failed to load image: ${tool.image_url}`);
+                 }}
+               />
+             ) : (
+               <div className="w-full h-full flex items-center justify-center text-gray-400">
+                 <Image
+                   src="/images/placeholder.svg"
+                   alt="プレースホルダー"
+                   width={64}
+                   height={64}
+                   className="opacity-50"
+                 />
+               </div>
+             )}
+           </div>
         </CardHeader>
         
-        <CardContent className="pt-0">
-          <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-2">
-            {tool.description || 'このツールの説明はまだ追加されていません。'}
-          </CardDescription>
-          
-          {/* 統計情報 */}
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              <span>{formatUsageCount(tool.usage_count)}</span>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3" />
-              <span>人気</span>
-            </div>
-          </div>
-        </CardContent>
+                 <CardContent className="pt-0">
+           <CardDescription className="text-sm text-gray-600 mb-2 line-clamp-2">
+             {tool.description || 'このツールの説明はまだ追加されていません。'}
+           </CardDescription>
+         </CardContent>
       </Card>
     </Link>
   );
