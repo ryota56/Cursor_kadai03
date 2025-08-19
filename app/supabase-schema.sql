@@ -1,6 +1,10 @@
 -- AI Tools Platform Database Schema
 
--- Tools table
+-- 一時的にRLSを無効化（データ移行用）
+ALTER TABLE tools DISABLE ROW LEVEL SECURITY;
+ALTER TABLE runs DISABLE ROW LEVEL SECURITY;
+
+-- テーブル作成
 CREATE TABLE tools (
   id BIGSERIAL PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
