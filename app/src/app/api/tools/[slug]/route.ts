@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 import type { Tool } from '@/types/tool';
 import type { GetToolDetailResponse, ApiError } from '@/types/api';
 
@@ -16,14 +15,20 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // データファイル読み込み
-    const dataPath = path.join(process.cwd(), 'data', 'tools.json');
-    const fileContents = await fs.readFile(dataPath, 'utf8');
-    const data = JSON.parse(fileContents);
-    
-    const tool: Tool | undefined = data.tools.find(
-      (t: Tool) => t.slug === slug && t.status === 'public'
-    );
+    // Supabaseからツールデータを取得
+    const { data: tools, error } = await supabase
+      .from('tools')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'public')
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    const tool: Tool | undefined = tools?.[0];
 
     if (!tool) {
       const errorResponse: { error: ApiError } = {

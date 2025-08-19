@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
+import { getToolsFromFile } from '@/lib/supabase-fallback';
 import type { Tool } from '@/types/tool';
 import type { GetToolsResponse, ApiError } from '@/types/api';
 
@@ -12,41 +12,83 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q');
     const favorites = searchParams.get('favorites'); // 新規: お気に入りフィルタ
 
-    // データファイル読み込み
-    const dataPath = path.join(process.cwd(), 'data', 'tools.json');
-    const fileContents = await fs.readFile(dataPath, 'utf8');
-    const data = JSON.parse(fileContents);
-    let tools: Tool[] = data.tools.filter((tool: Tool) => tool.status === 'public');
+    let tools: Tool[] = [];
+    let useFallback = false;
 
-    // お気に入りフィルタ
-    if (favorites && favorites.trim()) {
-      const favoriteSlugs = favorites.split(',').map(slug => slug.trim()).filter(Boolean);
-      if (favoriteSlugs.length > 0) {
-        tools = tools.filter(tool => favoriteSlugs.includes(tool.slug));
+    try {
+      // Supabaseからツールデータを取得
+      let supabaseQuery = supabase
+        .from('tools')
+        .select('*')
+        .eq('status', 'public');
+
+      // お気に入りフィルタ
+      if (favorites && favorites.trim()) {
+        const favoriteSlugs = favorites.split(',').map(slug => slug.trim()).filter(Boolean);
+        if (favoriteSlugs.length > 0) {
+          supabaseQuery = supabaseQuery.in('slug', favoriteSlugs);
+        }
+      }
+
+      // 検索フィルタ
+      if (query && query.trim()) {
+        const searchTerm = query.toLowerCase();
+        supabaseQuery = supabaseQuery.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await supabaseQuery;
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      tools = data || [];
+    } catch (error) {
+      console.error('Supabase failed, using fallback:', error);
+      useFallback = true;
+      
+      // フォールバック: JSONファイルから読み込み
+      tools = await getToolsFromFile();
+      
+      // フィルタリング（クライアント側で実行）
+      if (favorites && favorites.trim()) {
+        const favoriteSlugs = favorites.split(',').map(slug => slug.trim()).filter(Boolean);
+        if (favoriteSlugs.length > 0) {
+          tools = tools.filter(tool => favoriteSlugs.includes(tool.slug));
+        }
+      }
+
+      if (query && query.trim()) {
+        const searchTerm = query.toLowerCase();
+        tools = tools.filter(tool => 
+          tool.name.toLowerCase().includes(searchTerm) ||
+          tool.description?.toLowerCase().includes(searchTerm)
+        );
       }
     }
 
-    // 検索フィルタ
-    if (query && query.trim()) {
-      const searchTerm = query.toLowerCase();
-      tools = tools.filter(tool => 
-        tool.name.toLowerCase().includes(searchTerm) ||
-        tool.description?.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    // ソート
+    // ソート（Supabaseでソートできない場合はクライアント側で実行）
+    const sortedTools = [...tools];
     if (order === 'popular') {
-      tools.sort((a, b) => b.usage_count - a.usage_count);
+      sortedTools.sort((a: Tool, b: Tool) => b.usage_count - a.usage_count);
     } else if (order === 'latest') {
-      tools.sort((a, b) => {
+      sortedTools.sort((a: Tool, b: Tool) => {
         const aTime = new Date(a.created_at || '').getTime();
         const bTime = new Date(b.created_at || '').getTime();
         return bTime - aTime;
       });
     }
 
-    const response: GetToolsResponse = { tools };
+    const response: GetToolsResponse = { tools: sortedTools };
+    
+    // フォールバック使用をヘッダーで通知
+    if (useFallback) {
+      return NextResponse.json(response, {
+        headers: { 'X-Fallback-Used': 'true' }
+      });
+    }
+
     return NextResponse.json(response);
 
   } catch (error) {

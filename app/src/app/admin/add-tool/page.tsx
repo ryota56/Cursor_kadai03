@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { Plus, Save } from 'lucide-react';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { ImageUploader } from '@/components/forms/ImageUploader';
 import { toast } from 'sonner';
@@ -30,7 +29,6 @@ export default function AddToolPage() {
   // 自動遷移機能の状態
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(0);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
   const [redirectTimer, setRedirectTimer] = useState<NodeJS.Timeout | null>(null);
   
   // 最新のimageUrl値を保持するためのref
@@ -175,11 +173,10 @@ export default function AddToolPage() {
         throw new Error(errorData.error || 'ツールの追加に失敗しました');
       }
 
-      const result = await response.json();
+      await response.json();
       
       // 成功状態を設定
       setShowSuccessMessage(true);
-      setShouldRedirect(true);
       
       // カウントダウン開始
       let countdown = 2;
@@ -221,7 +218,6 @@ export default function AddToolPage() {
       }
       // 状態のリセット
       setShowSuccessMessage(false);
-      setShouldRedirect(false);
       setRedirectCountdown(0);
       
       // より詳細なエラーメッセージ
@@ -479,7 +475,6 @@ export default function AddToolPage() {
                 <Button
                   onClick={() => {
                     setShowSuccessMessage(false);
-                    setShouldRedirect(false);
                     if (redirectTimer) {
                       clearInterval(redirectTimer);
                     }
@@ -493,7 +488,6 @@ export default function AddToolPage() {
                   variant="outline"
                   onClick={() => {
                     setShowSuccessMessage(false);
-                    setShouldRedirect(false);
                     if (redirectTimer) {
                       clearInterval(redirectTimer);
                     }

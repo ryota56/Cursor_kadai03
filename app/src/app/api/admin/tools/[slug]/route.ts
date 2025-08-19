@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import type { Tool } from '@/types/tool';
+import { supabase } from '@/lib/supabase';
 import type { ApiError } from '@/types/api';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     
     // デフォルトツールの削除を拒否
     if (slug === 'rewrite') {
@@ -30,28 +28,25 @@ export async function DELETE(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    // データファイル読み込み
-    const dataPath = path.join(process.cwd(), 'data', 'tools.json');
-    
-    let fileContents: string;
-    try {
-      fileContents = await fs.readFile(dataPath, 'utf8');
-    } catch (error) {
-      console.error('❌ Failed to read tools.json:', error);
+    // Supabaseから削除対象ツールを取得
+    const { data: tools, error: fetchError } = await supabase
+      .from('tools')
+      .select('*')
+      .eq('slug', slug)
+      .limit(1);
+
+    if (fetchError) {
+      console.error('❌ Supabase fetch error:', fetchError);
       const errorResponse: { error: ApiError } = {
         error: {
           code: 'INTERNAL_ERROR',
-          message: 'ツールデータの読み込みに失敗しました'
+          message: 'ツールデータの取得に失敗しました'
         }
       };
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-    const data = JSON.parse(fileContents);
-    
-    // 削除対象ツールの検索
-    const toolIndex = data.tools.findIndex((tool: Tool) => tool.slug === slug);
-    if (toolIndex === -1) {
+    if (!tools || tools.length === 0) {
       const errorResponse: { error: ApiError } = {
         error: {
           code: 'TOOL_NOT_FOUND',
@@ -61,35 +56,16 @@ export async function DELETE(
       return NextResponse.json(errorResponse, { status: 404 });
     }
 
-    const deletedTool = data.tools[toolIndex];
+    const deletedTool = tools[0];
     
-    // バックアップ作成（削除前の安全策）
-    const timestamp = Date.now();
-    const backupPath = path.join(process.cwd(), 'data', `tools.backup.delete.${timestamp}.json`);
-    
-    try {
-      await fs.writeFile(backupPath, fileContents, 'utf8');
-      console.log('✅ Backup created:', backupPath);
-    } catch (error) {
-      console.error('❌ Failed to create backup:', error);
-      const errorResponse: { error: ApiError } = {
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'バックアップの作成に失敗しました'
-        }
-      };
-      return NextResponse.json(errorResponse, { status: 500 });
-    }
+    // Supabaseからツールを削除
+    const { error: deleteError } = await supabase
+      .from('tools')
+      .delete()
+      .eq('slug', slug);
 
-    // ツールをリストから削除
-    data.tools.splice(toolIndex, 1);
-    
-    // ファイルに保存（atomic操作）
-    try {
-      await fs.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf8');
-      console.log('✅ Tool deleted:', deletedTool.name, 'slug:', deletedTool.slug);
-    } catch (error) {
-      console.error('❌ Failed to save tools.json:', error);
+    if (deleteError) {
+      console.error('❌ Supabase delete error:', deleteError);
       const errorResponse: { error: ApiError } = {
         error: {
           code: 'INTERNAL_ERROR',
@@ -99,11 +75,12 @@ export async function DELETE(
       return NextResponse.json(errorResponse, { status: 500 });
     }
     
+    console.log('✅ Tool deleted:', deletedTool.name, 'slug:', deletedTool.slug);
+    
     return NextResponse.json({
       success: true,
       message: 'ツールが正常に削除されました',
-      deletedTool,
-      backupPath: path.basename(backupPath)
+      deletedTool
     });
     
   } catch (error) {

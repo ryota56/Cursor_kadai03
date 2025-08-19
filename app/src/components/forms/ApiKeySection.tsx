@@ -17,15 +17,7 @@ export function ApiKeySection({ onApiKeyChange, disabled }: ApiKeySectionProps) 
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [keyState, setKeyState] = useState<ApiKeyState>('not_set');
-  const [isValidating, setIsValidating] = useState(false);
   const [validationTimeout, setValidationTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  // Gemini APIキーの基本検証（緩和版）
-  const validateApiKey = useCallback((key: string): boolean => {
-    if (!key) return false;
-    // 基本的な長さと文字種のチェックのみ
-    return key.length >= 30 && key.length <= 50 && /^[A-Za-z0-9_-]+$/.test(key);
-  }, []);
 
   // API有効性検証関数
   const validateApiKeyWithGemini = useCallback(async (key: string) => {
@@ -33,7 +25,6 @@ export function ApiKeySection({ onApiKeyChange, disabled }: ApiKeySectionProps) 
       return false;
     }
     
-    setIsValidating(true);
     try {
       const response = await fetch('/api/validate-api-key', {
         method: 'POST',
@@ -49,8 +40,6 @@ export function ApiKeySection({ onApiKeyChange, disabled }: ApiKeySectionProps) 
     } catch (error) {
       console.error('API validation error:', error);
       return false;
-    } finally {
-      setIsValidating(false);
     }
   }, []);
 

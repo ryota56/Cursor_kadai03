@@ -192,9 +192,9 @@ async function optimizeImage(buffer: Buffer, mimeType: string): Promise<{ buffer
         break;
       case 'image/bmp':
         optimizedBuffer = await sharpInstance
-          .bmp()
+          .png({ quality: 85 })
           .toBuffer();
-        format = 'bmp';
+        format = 'png';
         break;
       case 'image/x-icon':
         optimizedBuffer = await sharpInstance

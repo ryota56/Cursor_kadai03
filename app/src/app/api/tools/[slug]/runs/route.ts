@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 import type { Tool, Field } from '@/types/tool';
 import type { PostRunRequest, PostRunResponse, ApiError } from '@/types/api';
 
@@ -132,14 +131,20 @@ export async function POST(
       }
     }
 
-    // ツール情報取得
-    const dataPath = path.join(process.cwd(), 'data', 'tools.json');
-    const fileContents = await fs.readFile(dataPath, 'utf8');
-    const data = JSON.parse(fileContents);
-    
-    const tool: Tool | undefined = data.tools.find(
-      (t: Tool) => t.slug === slug && t.status === 'public'
-    );
+    // Supabaseからツール情報取得
+    const { data: tools, error: toolError } = await supabase
+      .from('tools')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'public')
+      .limit(1);
+
+    if (toolError) {
+      console.error('Supabase tool error:', toolError);
+      throw toolError;
+    }
+
+    const tool: Tool | undefined = tools?.[0];
 
     if (!tool) {
       const errorResponse: { error: ApiError } = {
@@ -176,9 +181,28 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
+    // 実行履歴をSupabaseに保存（開始）
+    const runId = crypto.randomUUID();
+    const anonId = 'anonymous'; // 匿名ユーザー用
+    
+    const { error: insertError } = await supabase
+      .from('runs')
+      .insert({
+        id: runId,
+        anon_id: anonId,
+        tool_slug: slug,
+        inputs_json: inputs,
+        status: 'running'
+      });
+
+    if (insertError) {
+      console.error('Failed to insert run record:', insertError);
+    }
+
     // AI生成実行（既存ロジックを拡張）
     let output: Record<string, unknown>;
     let usedFallback = false;
+    let status: 'succeeded' | 'failed' = 'succeeded';
 
     try {
       if (mode === 'gemini' && (userApiKey || process.env.GEMINI_API_KEY)) {
@@ -193,9 +217,32 @@ export async function POST(
       // フォールバック（既存）
       output = generateMockResponse(tool, inputs);
       usedFallback = true;
+      status = 'failed';
     }
 
-    const runId = crypto.randomUUID();
+    // 実行履歴を更新（完了）
+    const { error: updateError } = await supabase
+      .from('runs')
+      .update({
+        output_json: output,
+        status: status
+      })
+      .eq('id', runId);
+
+    if (updateError) {
+      console.error('Failed to update run record:', updateError);
+    }
+
+    // 使用回数を更新
+    const { error: usageError } = await supabase
+      .from('tools')
+      .update({ usage_count: tool.usage_count + 1 })
+      .eq('slug', slug);
+
+    if (usageError) {
+      console.error('Failed to update usage count:', usageError);
+    }
+
     const response: PostRunResponse = { runId, output };
 
     if (usedFallback) {
