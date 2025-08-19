@@ -106,11 +106,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     });
 
   } catch (error) {
-    console.error('❌ Image upload error:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
+    const { logSecureError } = await import('@/lib/security');
+    logSecureError('Image upload', error);
     return NextResponse.json(
       { success: false, error: '画像のアップロードに失敗しました' },
       { status: 500 }

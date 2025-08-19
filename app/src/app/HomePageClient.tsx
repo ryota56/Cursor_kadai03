@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,55 +14,23 @@ import type { Tool } from '@/types/tool';
 import type { GetToolsResponse } from '@/types/api';
 import { Button } from '@/components/ui/button';
 
-interface HomePageClientProps {
-  initialTools: Tool[];
-}
-
-export function HomePageClient({ initialTools }: HomePageClientProps) {
+export function HomePageClient() {
   const { mounted } = useClientMount();
-  const [tools, setTools] = useState<Tool[]>(initialTools);
-  const [loading, setLoading] = useState(false);
+  const [allTools, setAllTools] = useState<Tool[]>([]);
+  const [favoriteTools, setFavoriteTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
 
-  // ツール一覧の取得
-  const fetchTools = async (tab: 'all' | 'favorites', query?: string) => {
+  // 全ツールの取得
+  const fetchAllTools = useCallback(async (query?: string) => {
     try {
       setLoading(true);
       setError(null);
       
       const params = new URLSearchParams();
-      
-      if (tab === 'favorites') {
-        // お気に入りタブの場合、localStorageから高速でフィルタリング
-        if (!mounted) return; // マウント前は実行しない
-        
-        const favorites = getFavorites();
-        if (favorites.length === 0) {
-          setTools([]);
-          return;
-        }
-        
-        // initialToolsから直接フィルタリング（API呼び出し不要）
-        const favoriteSlugs = favorites.map(fav => fav.toolSlug);
-        let filteredTools = initialTools.filter(tool => favoriteSlugs.includes(tool.slug));
-        
-        // 検索クエリがある場合はさらにフィルタリング
-        if (query && query.trim()) {
-          const searchTerm = query.toLowerCase();
-          filteredTools = filteredTools.filter(tool => 
-            tool.name.toLowerCase().includes(searchTerm) ||
-            tool.description?.toLowerCase().includes(searchTerm)
-          );
-        }
-        
-        setTools(filteredTools);
-        return;
-      }
-      
-      // allタブの場合は従来通りAPI呼び出し
-      params.append('order', 'popular'); // デフォルト順序
+      params.append('order', 'popular');
       if (query) params.append('q', query);
       
       const response = await fetch(`/api/tools?${params}`);
@@ -72,116 +40,89 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
       }
       
       const data: GetToolsResponse = await response.json();
-      setTools(data.tools);
+      setAllTools(data.tools);
     } catch (err) {
       setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // タブ変更時の処理（高速化）
-  useEffect(() => {
-    if (activeTab === 'all') {
-      if (!searchQuery) {
-        // 検索なし: 初期データを表示
-        setTools(initialTools);
-      } else {
-        // 検索あり: クライアント側で即座検索
-        const searchTerm = searchQuery.toLowerCase();
-        const filteredTools = initialTools.filter(tool => 
-          tool.name.toLowerCase().includes(searchTerm) ||
-          tool.description?.toLowerCase().includes(searchTerm)
-        );
-        setTools(filteredTools);
-      }
-    } else if (activeTab === 'favorites' && mounted) {
-      const favorites = getFavorites();
-      const favoriteSlugs = favorites.map(fav => fav.toolSlug);
-      let filteredTools = initialTools.filter(tool => favoriteSlugs.includes(tool.slug));
-      
-      // 検索クエリがある場合はさらにフィルタリング
-      if (searchQuery) {
-        const searchTerm = searchQuery.toLowerCase();
-        filteredTools = filteredTools.filter(tool => 
-          tool.name.toLowerCase().includes(searchTerm) ||
-          tool.description?.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      setTools(filteredTools);
-    }
-  }, [activeTab, initialTools, searchQuery, mounted]);
-
-  // 検索処理（リアルタイム）
-  useEffect(() => {
-    if (!searchQuery) {
-      // 検索クエリがクリアされた場合、初期データに戻す
-      if (activeTab === 'all') {
-        setTools(initialTools);
-      } else if (activeTab === 'favorites' && mounted) {
-        // お気に入りタブの場合、お気に入りツールを再表示
-        const favorites = getFavorites();
-        const favoriteSlugs = favorites.map(fav => fav.toolSlug);
-        const filteredTools = initialTools.filter(tool => favoriteSlugs.includes(tool.slug));
-        setTools(filteredTools);
-      }
-      setLoading(false);
+  // お気に入りツールの取得
+  const fetchFavoriteTools = useCallback(async (query?: string) => {
+    try {
+      setLoading(true);
       setError(null);
-      return;
-    }
-
-    // 即座にクライアント側で検索実行（デバウンスなし）
-    const searchTerm = searchQuery.toLowerCase();
-    
-    if (activeTab === 'all') {
-      // ツール一覧タブ: initialToolsから検索
-      const filteredTools = initialTools.filter(tool => 
-        tool.name.toLowerCase().includes(searchTerm) ||
-        tool.description?.toLowerCase().includes(searchTerm)
-      );
-      setTools(filteredTools);
-    } else if (activeTab === 'favorites' && mounted) {
-      // お気に入りタブ: お気に入りツールから検索
+      
+      if (!mounted) return;
+      
       const favorites = getFavorites();
+      if (favorites.length === 0) {
+        setFavoriteTools([]);
+        setLoading(false);
+        return;
+      }
+      
+      // お気に入りのツールをAPIから取得
       const favoriteSlugs = favorites.map(fav => fav.toolSlug);
-      const favoriteTools = initialTools.filter(tool => favoriteSlugs.includes(tool.slug));
-      const filteredTools = favoriteTools.filter(tool => 
-        tool.name.toLowerCase().includes(searchTerm) ||
-        tool.description?.toLowerCase().includes(searchTerm)
-      );
-      setTools(filteredTools);
+      const params = new URLSearchParams();
+      params.append('favorites', favoriteSlugs.join(','));
+      if (query) params.append('q', query);
+      
+      const response = await fetch(`/api/tools?${params}`);
+      if (!response.ok) {
+        throw new Error('ツールの取得に失敗しました');
+      }
+      
+      const data: GetToolsResponse = await response.json();
+      setFavoriteTools(data.tools);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-    setError(null);
-  }, [searchQuery, activeTab, initialTools, mounted]);
+  }, [mounted]);
 
-  // お気に入り変更の監視（localStorageイベント）
+  // 現在のタブに応じたツールを取得
+  const currentTools = activeTab === 'all' ? allTools : favoriteTools;
+
+  // 初期データ取得
+  useEffect(() => {
+    fetchAllTools();
+  }, [fetchAllTools]);
+
+  // タブ変更時の処理
+  useEffect(() => {
+    if (activeTab === 'all') {
+      fetchAllTools(searchQuery);
+    } else {
+      fetchFavoriteTools(searchQuery);
+    }
+  }, [activeTab, fetchAllTools, fetchFavoriteTools, searchQuery]);
+
+  // お気に入り変更の監視
   useEffect(() => {
     if (!mounted) return;
 
     const handleStorageChange = () => {
       if (activeTab === 'favorites') {
-        fetchTools('favorites', searchQuery);
+        fetchFavoriteTools(searchQuery);
       }
     };
 
-    // localStorageの変更を監視
     window.addEventListener('storage', handleStorageChange);
-    
-    // カスタムイベントも監視（同じタブ内での変更）
     window.addEventListener('favoritesChanged', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('favoritesChanged', handleStorageChange);
     };
-  }, [activeTab, searchQuery, mounted]);
+  }, [activeTab, searchQuery, mounted, fetchFavoriteTools]);
 
   // 削除処理
   const handleDeleteTool = (deletedTool: Tool) => {
-    setTools(prevTools => prevTools.filter(tool => tool.slug !== deletedTool.slug));
+    setAllTools(prevTools => prevTools.filter(tool => tool.slug !== deletedTool.slug));
+    setFavoriteTools(prevTools => prevTools.filter(tool => tool.slug !== deletedTool.slug));
   };
 
   // スケルトンUI
@@ -272,7 +213,7 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
               <SkeletonCards />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tools.map((tool) => (
+                {currentTools.map((tool) => (
                   <ToolCard key={tool.id} tool={tool} onDelete={handleDeleteTool} />
                 ))}
               </div>
@@ -286,7 +227,7 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
               </Alert>
             ) : loading ? (
               <SkeletonCards />
-            ) : tools.length === 0 ? (
+            ) : currentTools.length === 0 ? (
               <div className="text-center py-12">
                 <Heart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">お気に入りがありません</h3>
@@ -302,7 +243,7 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tools.map((tool) => (
+                {currentTools.map((tool) => (
                   <ToolCard key={tool.id} tool={tool} onDelete={handleDeleteTool} />
                 ))}
               </div>
@@ -311,7 +252,7 @@ export function HomePageClient({ initialTools }: HomePageClientProps) {
         </Tabs>
 
         {/* 結果なしの場合 (allタブのみ) */}
-        {!loading && !error && tools.length === 0 && activeTab === 'all' && (
+        {!loading && !error && currentTools.length === 0 && activeTab === 'all' && (
           <div className="text-center py-12">
             <p className="text-gray-500">
               {searchQuery ? '検索結果が見つかりませんでした' : 'ツールがありません'}

@@ -130,9 +130,8 @@ export default function AddToolPage() {
         finalImageUrl = imageUrl;
       }
       
-      // 新ツールデータの構築
+      // 新ツールデータの構築（自動生成フィールドは除外）
       const newTool = {
-        id: Date.now(),
         slug: toolData.slug || toolData.name.toLowerCase().replace(/\s+/g, '-'),
         name: toolData.name.trim(),
         description: toolData.description.trim(),
@@ -152,12 +151,12 @@ export default function AddToolPage() {
             maxLength: 8000
           }
         ],
-        prompt_template: toolData.prompt_template.trim(),
-        created_at: new Date().toISOString()
+        prompt_template: toolData.prompt_template.trim()
       };
 
       // デバッグログ追加
       console.log('📋 Tool data image_url:', newTool.image_url);
+      console.log('📋 Full tool data being sent:', JSON.stringify(newTool, null, 2));
 
       // APIエンドポイントに送信
       const response = await fetch('/api/admin/tools', {
@@ -170,7 +169,8 @@ export default function AddToolPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'ツールの追加に失敗しました');
+        console.error('❌ API Error Response:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: ツールの追加に失敗しました`);
       }
 
       await response.json();

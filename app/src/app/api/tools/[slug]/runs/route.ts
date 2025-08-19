@@ -91,7 +91,8 @@ async function callGemini(
     const response = await result.response;
     return response.text();
   } catch (error) {
-    console.error('Gemini API error:', error);
+    const { logSecureError } = await import('@/lib/security');
+    logSecureError('Gemini API', error);
     
     // APIキーエラーの詳細化（既存エラーハンドリングを拡張）
     if (error instanceof Error) {
@@ -140,7 +141,8 @@ export async function POST(
       .limit(1);
 
     if (toolError) {
-      console.error('Supabase tool error:', toolError);
+      const { logSecureError } = await import('@/lib/security');
+      logSecureError('Supabase tool', toolError);
       throw toolError;
     }
 
@@ -196,7 +198,8 @@ export async function POST(
       });
 
     if (insertError) {
-      console.error('Failed to insert run record:', insertError);
+      const { logSecureError } = await import('@/lib/security');
+      logSecureError('Insert run record', insertError);
     }
 
     // AI生成実行（既存ロジックを拡張）
@@ -213,7 +216,8 @@ export async function POST(
         output = generateMockResponse(tool, inputs);
       }
     } catch (error) {
-      console.error('Generation error:', error);
+      const { logSecureError } = await import('@/lib/security');
+      logSecureError('Generation', error);
       // フォールバック（既存）
       output = generateMockResponse(tool, inputs);
       usedFallback = true;
@@ -230,7 +234,8 @@ export async function POST(
       .eq('id', runId);
 
     if (updateError) {
-      console.error('Failed to update run record:', updateError);
+      const { logSecureError } = await import('@/lib/security');
+      logSecureError('Update run record', updateError);
     }
 
     // 使用回数を更新

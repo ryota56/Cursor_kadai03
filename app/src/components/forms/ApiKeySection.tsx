@@ -46,13 +46,14 @@ export function ApiKeySection({ onApiKeyChange, disabled }: ApiKeySectionProps) 
   const handleApiKeyChange = (value: string) => {
     setApiKey(value);
     
-    // デバッグ情報（開発環境のみ）
+    // セキュアなデバッグ情報（開発環境のみ）
     if (process.env.NODE_ENV === 'development') {
-      console.log('API Key Input Debug:', {
-        value: value,
-        length: value.length,
-        startsWithAIza: value.startsWith('AIza-'),
-        pattern: /^AIza-[A-Za-z0-9_-]{35}$/.test(value)
+      import('@/lib/security').then(({ logSecureDebug }) => {
+        logSecureDebug('API Key Input', {
+          length: value.length,
+          startsWithAIza: value.startsWith('AIza'),
+          hasValidFormat: /^AIza[A-Za-z0-9_-]+$/.test(value)
+        });
       });
     }
 

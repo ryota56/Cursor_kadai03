@@ -54,15 +54,26 @@ export function ImageUploader({
   }, [accept, maxSize]);
 
   const handleUploadWithFile = useCallback(async (file: File) => {
-    console.log('🔥 handleUploadWithFile called, file:', file.name);
+    const { logSecureDebug, validateFileUpload } = await import('@/lib/security');
+    
+    logSecureDebug('Image upload attempt', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
     
     if (!file) {
-      console.error('❌ No file provided for upload');
       toast.error('アップロードするファイルが提供されていません');
       return;
     }
 
-    console.log('📤 Starting upload for:', file.name);
+    // セキュリティ検証
+    const validation = validateFileUpload(file);
+    if (!validation.isValid) {
+      toast.error(validation.error || 'ファイルの検証に失敗しました');
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -70,7 +81,6 @@ export function ImageUploader({
       const formData = new FormData();
       formData.append('image', file);
 
-      console.log('📡 Sending request to /api/admin/upload-image');
       const response = await fetch('/api/admin/upload-image', {
         method: 'POST',
         body: formData,
@@ -82,7 +92,9 @@ export function ImageUploader({
       }
 
       const result = await response.json();
-      console.log('📤 Image upload result:', result);
+      logSecureDebug('Image upload success', {
+        imageUrl: result.imageUrl ? '[SET]' : '[NOT_SET]'
+      });
       
       // 画像URLの検証
       if (!result.imageUrl) {
@@ -92,13 +104,13 @@ export function ImageUploader({
       toast.success('画像がアップロードされました');
       
       // コールバックで親コンポーネントに通知
-      console.log('📞 Calling onImageUploaded with:', result.imageUrl);
       if (onImageUploaded) {
         onImageUploaded(result.imageUrl);
       }
       
     } catch (error) {
-      console.error('Upload error:', error);
+      const { logSecureError } = await import('@/lib/security');
+      logSecureError('Image upload', error);
       toast.error(error instanceof Error ? error.message : 'アップロードに失敗しました');
     } finally {
       setIsUploading(false);

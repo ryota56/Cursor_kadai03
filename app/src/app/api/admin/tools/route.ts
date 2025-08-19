@@ -4,10 +4,26 @@ import type { Tool } from '@/types/tool';
 
 export async function POST(request: NextRequest) {
   try {
-    const newTool: Tool = await request.json();
+    const requestData = await request.json();
+    
+    // 自動生成フィールドを除外してツールデータを構築
+    const newTool = {
+      slug: requestData.slug,
+      name: requestData.name,
+      description: requestData.description,
+      type: requestData.type,
+      image_url: requestData.image_url,
+      usage_count: requestData.usage_count || 0,
+      status: requestData.status || 'public',
+      form_schema_json: requestData.form_schema_json,
+      prompt_template: requestData.prompt_template
+    };
+    
+    console.log('📋 Received tool data:', newTool);
     
     // バリデーション
     if (!newTool.name || !newTool.description || !newTool.prompt_template) {
+      console.error('❌ Validation failed: missing required fields');
       return NextResponse.json(
         { error: '必須フィールドが不足しています' },
         { status: 400 }
@@ -21,7 +37,7 @@ export async function POST(request: NextRequest) {
       .eq('slug', newTool.slug);
 
     if (checkError) {
-      console.error('Supabase check error:', checkError);
+      console.error('❌ Supabase check error:', checkError);
       return NextResponse.json(
         { error: 'データベースエラーが発生しました' },
         { status: 500 }
@@ -29,6 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingTools && existingTools.length > 0) {
+      console.error('❌ Slug already exists:', newTool.slug);
       return NextResponse.json(
         { error: `slug '${newTool.slug}' は既に使用されています` },
         { status: 400 }
@@ -43,14 +60,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Supabase insert error:', insertError);
+      console.error('❌ Supabase insert error:', insertError);
       return NextResponse.json(
-        { error: 'ツールの追加に失敗しました' },
+        { error: `ツールの追加に失敗しました: ${insertError.message}` },
         { status: 500 }
       );
     }
     
-    console.log('✅ New tool added:', newTool.name);
+    console.log('✅ New tool added successfully:', insertedTool);
     
     return NextResponse.json({ 
       success: true, 
@@ -61,7 +78,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Tool creation error:', error);
     return NextResponse.json(
-      { error: 'ツールの追加に失敗しました' },
+      { error: `ツールの追加に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
