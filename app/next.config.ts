@@ -4,8 +4,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: ['@/components/ui'],
-    // 開発者ツールを無効化（YAML指示書準拠）
-    instrumentationHook: false,
   },
   // SSR 最適化（YAML指示書準拠）
   poweredByHeader: false,
