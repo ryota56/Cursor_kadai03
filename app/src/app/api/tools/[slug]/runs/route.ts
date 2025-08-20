@@ -24,10 +24,21 @@ function validateField(field: Field, value: unknown): string | null {
 function buildPrompt(template: string, inputs: Record<string, unknown>): string {
   let prompt = template;
   
-  // %s_fieldname% パターンを inputs[fieldname] で置換
+  // 複数のパターンをサポート
   for (const [key, value] of Object.entries(inputs)) {
-    const pattern = new RegExp(`%s_${key}%`, 'g');
-    prompt = prompt.replace(pattern, String(value || ''));
+    // %s_fieldname% パターン
+    const percentPattern = new RegExp(`%s_${key}%`, 'g');
+    prompt = prompt.replace(percentPattern, String(value || ''));
+    
+    // {{ fieldname }} パターン
+    const bracePattern = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+    prompt = prompt.replace(bracePattern, String(value || ''));
+    
+    // user_input の特別処理（contentフィールドをuser_inputとして扱う）
+    if (key === 'content') {
+      const userInputPattern = new RegExp(`{{\\s*user_input\\s*}}`, 'g');
+      prompt = prompt.replace(userInputPattern, String(value || ''));
+    }
   }
   
   return prompt;
@@ -210,7 +221,13 @@ export async function POST(
     try {
       if (mode === 'gemini' && (userApiKey || process.env.GEMINI_API_KEY)) {
         const prompt = buildPrompt(tool.prompt_template, inputs);
+        console.log('=== DEBUG: Generated prompt ===');
+        console.log('Template:', tool.prompt_template);
+        console.log('Inputs:', inputs);
+        console.log('Final prompt:', prompt);
         const result = await callGemini(prompt, model, userApiKey);
+        console.log('=== DEBUG: Gemini result ===');
+        console.log('Result:', result);
         output = { text: result };
       } else {
         output = generateMockResponse(tool, inputs);

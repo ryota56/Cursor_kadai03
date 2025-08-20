@@ -22,6 +22,7 @@ export function HomePageClient() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
 
   // 全ツールの取得
   const fetchAllTools = useCallback(async (query?: string) => {
@@ -41,14 +42,36 @@ export function HomePageClient() {
       
       const data: GetToolsResponse = await response.json();
       setAllTools(data.tools);
+      
+      // 全ツール取得後、お気に入りツールも事前に準備
+      if (!favoritesLoaded && mounted) {
+        prepareFavoriteTools(data.tools);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [favoritesLoaded, mounted]);
 
-  // お気に入りツールの取得
+  // お気に入りツールの事前準備（全ツールから抽出）
+  const prepareFavoriteTools = useCallback((tools: Tool[]) => {
+    if (!mounted) return;
+    
+    const favorites = getFavorites();
+    if (favorites.length === 0) {
+      setFavoriteTools([]);
+      setFavoritesLoaded(true);
+      return;
+    }
+    
+    const favoriteSlugs = favorites.map(fav => fav.toolSlug);
+    const filteredTools = tools.filter(tool => favoriteSlugs.includes(tool.slug));
+    setFavoriteTools(filteredTools);
+    setFavoritesLoaded(true);
+  }, [mounted]);
+
+  // お気に入りツールの取得（検索時のみ使用）
   const fetchFavoriteTools = useCallback(async (query?: string) => {
     try {
       setLoading(true);
@@ -91,14 +114,18 @@ export function HomePageClient() {
     fetchAllTools();
   }, [fetchAllTools]);
 
-  // タブ変更時の処理
+  // タブ変更時の処理（検索時のみAPIリクエスト）
   useEffect(() => {
     if (activeTab === 'all') {
       fetchAllTools(searchQuery);
-    } else {
+    } else if (searchQuery) {
+      // お気に入りタブで検索時のみAPIリクエスト
       fetchFavoriteTools(searchQuery);
+    } else if (favoritesLoaded) {
+      // 検索なしの場合は事前準備したデータを使用
+      prepareFavoriteTools(allTools);
     }
-  }, [activeTab, fetchAllTools, fetchFavoriteTools, searchQuery]);
+  }, [activeTab, searchQuery, fetchAllTools, fetchFavoriteTools, favoritesLoaded]);
 
   // お気に入り変更の監視
   useEffect(() => {
@@ -106,7 +133,8 @@ export function HomePageClient() {
 
     const handleStorageChange = () => {
       if (activeTab === 'favorites') {
-        fetchFavoriteTools(searchQuery);
+        // お気に入り変更時は事前準備したデータを更新
+        prepareFavoriteTools(allTools);
       }
     };
 
@@ -117,7 +145,7 @@ export function HomePageClient() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('favoritesChanged', handleStorageChange);
     };
-  }, [activeTab, searchQuery, mounted, fetchFavoriteTools]);
+  }, [activeTab, mounted]);
 
   // 削除処理
   const handleDeleteTool = (deletedTool: Tool) => {
