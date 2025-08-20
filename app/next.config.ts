@@ -4,9 +4,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: ['@/components/ui'],
+    // 開発者ツールを無効化（YAML指示書準拠）
+    instrumentationHook: false,
   },
-  // SSR 最適化
+  // SSR 最適化（YAML指示書準拠）
   poweredByHeader: false,
+  // 開発者ツールのアイコンを完全に無効化（安全版）
+  devIndicators: false,
   // ハイドレーション問題軽減
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

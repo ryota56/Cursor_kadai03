@@ -124,4 +124,162 @@
       linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
   }
+
+  /* Next.jsのデフォルトアイコンを非表示 */
+  [data-nextjs-data-router-tree-view] {
+    display: none !important;
+  }
+  
+  /* 左下のNアイコンを非表示 */
+  .nextjs-toast-errors-parent {
+    display: none !important;
+  }
+  
+  /* 開発者ツール関連のアイコンを非表示 */
+  [data-nextjs-router-rendered] {
+    display: none !important;
+  }
+  
+  /* より包括的なNext.jsアイコン非表示 */
+  [data-nextjs-data-router-tree-view],
+  [data-nextjs-router-rendered],
+  .nextjs-toast-errors-parent,
+  [data-nextjs-router-tree-view] *,
+  .nextjs-toast-errors-parent * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* 左下の固定アイコンを非表示 */
+  body > div[style*="position: fixed"][style*="bottom"][style*="left"] {
+    display: none !important;
+  }
+  
+  /* 右下の固定アイコンも非表示 */
+  body > div[style*="position: fixed"][style*="bottom"][style*="right"] {
+    display: none !important;
+  }
+  
+  /* より包括的なNext.jsアイコン完全非表示 */
+  [data-nextjs-data-router-tree-view],
+  [data-nextjs-router-rendered],
+  .nextjs-toast-errors-parent,
+  [data-nextjs-router-tree-view] *,
+  .nextjs-toast-errors-parent *,
+  div[style*="position: fixed"][style*="bottom"],
+  div[style*="position: fixed"][style*="z-index: 9999"],
+  div[style*="position: fixed"][style*="z-index: 2147483647"],
+  div[data-nextjs-router-rendered],
+  div[data-nextjs-data-router-tree-view],
+  div[class*="nextjs"],
+  div[id*="nextjs"],
+  div[class*="NextJS"],
+  div[id*="NextJS"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  
+  /* 全ての固定位置要素でNext.js関連を非表示 */
+  body > div[style*="position: fixed"] {
+    display: none !important;
+  }
+  
+  /* 特定のz-index値を持つ要素を非表示 */
+  body > div[style*="z-index: 9999"],
+  body > div[style*="z-index: 2147483647"] {
+    display: none !important;
+  }
+
+  /* NextJSアイコン完全非表示 - 超軽量版（YAML指示書準拠） */
+  [data-nextjs-data-router-tree-view],
+  [data-nextjs-router-rendered],
+  div[style*="position: fixed"][style*="bottom"][style*="right"],
+  div[style*="position: fixed"][style*="bottom"][style*="left"],
+  div[style*="z-index: 2147483647"],
+  div[style*="z-index: 9999"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -10000px !important;
+    top: -10000px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    z-index: -999999 !important;
+  }
+
+  /* 実際のHTML要素に基づく確実な非表示化 */
+  div[data-nextjs-toast="true"],
+  div[data-next-badge-root="true"],
+  button[data-nextjs-dev-tools-button="true"],
+  div[data-nextjs-toast="true"] *,
+  div[data-next-badge-root="true"] *,
+  button[data-nextjs-dev-tools-button="true"] * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -10000px !important;
+    top: -10000px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    z-index: -999999 !important;
+  }
+
+  /* 特定の位置指定要素の非表示 */
+  div[style*="bottom: 20px"][style*="right: 20px"],
+  div[style*="bottom: 20px"][style*="right: 20px"] * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -10000px !important;
+    top: -10000px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    z-index: -999999 !important;
+  }
+
+  /* 最終手段：全てのNext.js関連要素を非表示 */
+  [data-nextjs-toast],
+  [data-next-badge-root],
+  [data-nextjs-dev-tools-button],
+  [data-next-mark],
+  [data-nextjs-toast] *,
+  [data-next-badge-root] *,
+  [data-nextjs-dev-tools-button] *,
+  [data-next-mark] * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -10000px !important;
+    top: -10000px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    z-index: -999999 !important;
+  }
 }
