@@ -47,7 +47,7 @@ export function HomePageClient() {
     } finally {
       setLoading(false);
     }
-  }, [mounted]);
+  }, []);
 
   // お気に入りツールの取得（検索時のみ使用）
   const fetchFavoriteTools = useCallback(async (query?: string) => {
@@ -109,14 +109,14 @@ export function HomePageClient() {
     if (mounted) {
       fetchAllTools();
     }
-  }, [mounted, fetchAllTools]);
+  }, [mounted]);
 
   // 全ツール取得後にお気に入りツールを準備
   useEffect(() => {
     if (mounted && allTools.length > 0 && !favoritesLoaded) {
       prepareFavoriteTools(allTools);
     }
-  }, [mounted, allTools, favoritesLoaded, prepareFavoriteTools]);
+  }, [mounted, allTools, favoritesLoaded]);
 
   // タブ変更時の処理（検索時のみAPIリクエスト）
   useEffect(() => {
@@ -140,7 +140,7 @@ export function HomePageClient() {
         setFavoritesLoaded(true);
       }
     }
-  }, [activeTab, searchQuery, favoritesLoaded, mounted, fetchAllTools, fetchFavoriteTools, prepareFavoriteTools]);
+  }, [activeTab, searchQuery, favoritesLoaded, mounted, allTools]);
 
   // お気に入り変更の監視用ハンドラー
   const handleStorageChange = useCallback(() => {
@@ -148,7 +148,7 @@ export function HomePageClient() {
       // お気に入り変更時は事前準備したデータを更新
       prepareFavoriteTools(allTools);
     }
-  }, [activeTab, mounted, allTools, prepareFavoriteTools]);
+  }, [activeTab, mounted, allTools]);
 
   // お気に入り変更の監視
   useEffect(() => {
